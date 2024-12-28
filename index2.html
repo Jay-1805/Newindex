@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assignment 01</title>
+  <style>
+    /* CSS Styles */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #ff7e5f, #feb47b);
+      background-size: 400% 400%;
+      animation: gradientBG 10s ease infinite;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #fff;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      text-align: center;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      width: 350px;
+      backdrop-filter: blur(10px);
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin: 0;
+      color: #fff;
+      text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
+    }
+
+    .input-section label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    .input-section input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 2px solid #ff7e5f;
+      border-radius: 8px;
+      outline: none;
+      background: #fff;
+    }
+
+    .input-section button {
+      padding: 15px 20px;
+      background-color: #ff5722;
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+
+    .summary-section button {
+      padding: 12px 18px;
+      background-color: #4caf50;
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      margin-top: 15px;
+      font-size: 1rem;
+    }
+
+    .hidden { display: none; }
+
+    #summaryDisplay {
+      margin-top: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+      padding: 15px;
+      border-radius: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Assignment 01</h1>
+    </header>
+    <div class="input-section">
+      <label for="studentName">Enter Your Name:</label>
+      <input type="text" id="studentName" placeholder="Your name here">
+
+      <label for="studentEmail">Enter Your Email:</label>
+      <input type="email" id="studentEmail" placeholder="Your email here">
+
+      <button id="getQuestionBtn">Get a Question</button>
+    </div>
+    <div id="questionDisplay" class="hidden">
+      <p id="questionText"></p>
+    </div>
+    <div class="summary-section">
+      <button id="summaryBtn">View Summary</button>
+      <input type="password" id="passwordInput" placeholder="Enter password" class="hidden">
+      <button id="generatePdfBtn" class="hidden">Generate PDF</button>
+      <div id="summaryDisplay" class="hidden"></div>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+  <script>
+    const questions = Array.from({ length: 36 }, (_, i) => `Question ${i + 1}`);
+    const assignedQuestions = new Set();
+    const emailToQuestion = new Map();
+    const emailToName = new Map();
+
+    const getQuestionBtn = document.getElementById("getQuestionBtn");
+    const summaryBtn = document.getElementById("summaryBtn");
+    const passwordInput = document.getElementById("passwordInput");
+    const generatePdfBtn = document.getElementById("generatePdfBtn");
+    const questionDisplay = document.getElementById("questionDisplay");
+    const questionText = document.getElementById("questionText");
+    const summaryDisplay = document.getElementById("summaryDisplay");
+
+    getQuestionBtn.addEventListener("click", () => {
+      const studentName = document.getElementById("studentName").value.trim();
+      const studentEmail = document.getElementById("studentEmail").value.trim();
+
+      if (!studentName || !studentEmail) {
+        alert("Please enter your name and email.");
+        return;
+      }
+
+      if (emailToQuestion.has(studentEmail)) {
+        questionText.textContent = `Hello ${studentName}, your question is: "${emailToQuestion.get(studentEmail)}"`;
+        questionDisplay.classList.remove("hidden");
+        return;
+      }
+
+      const availableQuestions = questions.filter(q => !assignedQuestions.has(q));
+      if (availableQuestions.length === 0) {
+        questionText.textContent = "No more questions available.";
+        questionDisplay.classList.remove("hidden");
+        return;
+      }
+
+      const randomQuestion = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+      emailToQuestion.set(studentEmail, randomQuestion);
+      emailToName.set(studentEmail, studentName);
+      assignedQuestions.add(randomQuestion);
+
+      questionText.textContent = `Hello ${studentName}, your question is: "${randomQuestion}"`;
+      questionDisplay.classList.remove("hidden");
+    });
+
+    summaryBtn.addEventListener("click", () => {
+      passwordInput.classList.remove("hidden");
+      passwordInput.addEventListener("input", (e) => {
+        if (e.target.value === "074933651") {
+          summaryDisplay.classList.remove("hidden");
+          generatePdfBtn.classList.remove("hidden");
+          const summary = Array.from(emailToQuestion.entries())
+            .map(([email, question]) => `Email: ${email}, Name: ${emailToName.get(email)}, Question: ${question}`)
+            .join("\n");
+          summaryDisplay.textContent = summary || "No data available.";
+        }
+      });
+    });
+
+    generatePdfBtn.addEventListener("click", () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(12);
+      doc.text("Assignment Summary", 10, 10);
+
+      let y = 20;
+      Array.from(emailToQuestion.entries()).forEach(([email, question]) => {
+        const name = emailToName.get(email);
+        doc.text(`Email: ${email}, Name: ${name}, Question: ${question}`, 10, y);
+        y += 10;
+      });
+
+      doc.save("Assignment_Summary.pdf");
+    });
+  </script>
+</body>
+</html>
